@@ -4,9 +4,10 @@ using System.Collections.Generic;
 using System.Drawing;
 using System;
 using Color = UnityEngine.Color;
+using Random = System.Random;
 
-//namespace kmeans
-//{
+namespace kmeans
+{
     public class k_means_test : MonoBehaviour
     {
         #region Definition
@@ -30,24 +31,24 @@ using Color = UnityEngine.Color;
             ImageProgress();
         }
 
-    //RenderTextureをTexture２Dに変換
-    Texture2D CreateTexture2D(RenderTexture rt)
-    {
-        //Texture2Dを作成
-        Texture2D texture2D = new Texture2D(rt.width, rt.height, TextureFormat.ARGB32, false, false);
+        //RenderTextureをTexture２Dに変換
+        Texture2D CreateTexture2D(RenderTexture rt)
+        {
+            //Texture2Dを作成
+            Texture2D texture2D = new Texture2D(rt.width, rt.height, TextureFormat.ARGB32, false, false);
 
-        RenderTexture.active = rt;
-        texture2D.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0);
-        texture2D.Apply();
+            RenderTexture.active = rt;
+            texture2D.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0);
+            texture2D.Apply();
 
-        //元に戻す別のカメラを用意してそれをRenderTexter用にすれば下のコードはいらないです。
-        RenderTexture.active = null;
+            //元に戻す別のカメラを用意してそれをRenderTexter用にすれば下のコードはいらないです。
+            RenderTexture.active = null;
+            Debug.Log("Tex2Dに変換終了");
+            return texture2D;
+        }
 
-        return texture2D;
-    }
-
-    //平滑化処理
-    private void ImageProgress()
+        //平滑化処理
+        private void ImageProgress()
         {
             var step1 = test_k.FindKernel("imageprogress");
 
@@ -64,46 +65,60 @@ using Color = UnityEngine.Color;
             Needclasster(texture, map);
         }
 
-    //重心が停止してるか判断
-    private bool ClusterCheck()
-    {
-        int cnt = 0;
-        bool ret = false;
-
-        for (int i = 0; i < cluster_size; i++)
+        //以下kmeans法==========================================================================================
+        //重心が停止してるか判断
+        private bool ClusterCheck()
         {
-            if (centroid[i].r == buffer[i].r && centroid[i].g == buffer[i].g && centroid[i].b == buffer[i].b)//centroidとbuffer(一つ前の重心)のRGB値が同じなら
+            Debug.Log(cluster_size);
+            int cnt = 0;
+            bool ret = false;
+
+            for (int i = 0; i < cluster_size; i++)
             {
-                cnt = cnt + 1;
+                if (centroid[i].r == buffer[i].r && centroid[i].g == buffer[i].g && centroid[i].b == buffer[i].b)//centroidとbuffer(一つ前の重心)のRGB値が同じなら
+                {
+                    cnt = cnt + 1;
+                    Debug.Log(cnt);
+                }
+            }
+            if (cnt == cluster_size)
+            {
+                ret = true;
+            }
+
+            return ret;
+        }
+
+        //画素（Point）と重心の色の距離を計算
+        private double ColorDistance(Point a, Color b, Texture2D Image)
+        {
+            Debug.Log("距離計算開始");
+            double dR = Image.GetPixel(a.X, a.Y).r - (int)b.r;
+            double dG = Image.GetPixel(a.X, a.Y).g - (int)b.g;
+            double dB = Image.GetPixel(a.X, a.Y).b - (int)b.b;
+
+            return Math.Sqrt(dR * dR + dG * dG + dB * dB);
+        }
+
+        private void Randinit()
+        {
+            int seed = Environment.TickCount;//秒数を保持
+            for (int i = 0; i < cluster_size; i++)
+            {
+                Random rnd = new Random(seed++);
+                centroid[i] = new Color(rnd.Next(255), rnd.Next(255), rnd.Next(255));
             }
         }
-        if (cnt == cluster_size)
+
+        void Needclasster(Texture2D ProgressedImage, int[,] mapp)
         {
-            ret = true;
-        }
+            Debug.Log("kmeans突入");
+            Randinit();
 
-        return ret;
-    }
-
-    //画素（Point）と重心の色の距離を計算
-    private double ColorDistance(Point a, Color b, Texture2D Image)
-    {
-        Debug.Log("距離計算");
-        double dR = Image.GetPixel(a.X, a.Y).r - (int)b.r;
-        double dG = Image.GetPixel(a.X, a.Y).g - (int)b.g;
-        double dB = Image.GetPixel(a.X, a.Y).b - (int)b.b;
-
-        return Math.Sqrt(dR * dR + dG * dG + dB * dB);
-    }
-
-    //以下kmeans法==========================================================================================
-    void Needclasster(Texture2D ProgressedImage, int[,] mapp)
-        {
-        Debug.Log("kmeans突入");
             while (ClusterCheck() == false)
             {
-            Debug.Log("while");
-            for (int i = 0; i < ProgressedImage.width; i++)
+                Debug.Log("while");
+                for (int i = 0; i < ProgressedImage.width; i++)
                 {
                     for (int j = 0; j < ProgressedImage.height; j++)
                     {
@@ -160,7 +175,7 @@ using Color = UnityEngine.Color;
 
                 }
             }
-
+            Debug.Log("while無視");
             Texture2D resltimage = new Texture2D(ProgressedImage.width, ProgressedImage.height);
             for (int i = 0; i < ProgressedImage.width; i++)
             {
@@ -173,4 +188,4 @@ using Color = UnityEngine.Color;
             GetComponent<Renderer>().material.mainTexture = resltimage;
         }
     }
-//}
+}
