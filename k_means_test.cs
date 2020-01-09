@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using System.Drawing;
@@ -62,26 +62,25 @@ namespace kmeans
 
             int[,] map = new int[texture.width, texture.height];
             Debug.Log("平滑化終了");
-            Needclasster(texture, map);
+            //テスト
+            Randinit();
+            Point q = new Point(50, 50);
+            Color c = new Color(0.2f, 0.2f, 0.5f, 1.0f);
+            Debug.Log(ColorDistance(q, c, texture));
+            //Needclasster(texture, map);
         }
 
         //以下kmeans法==========================================================================================
         //初期値
-/*        private void Randinit()
+        void Randinit()
         {
-            //int seed = Environment.TickCount;//秒数を保持
+            Random.InitState(Environment.TickCount);
             for (int i = 0; i < cluster_size; i++)
             {
-                //Random rnd = new Random(seed++);
-                centroid[i] = new Color()
-                {
-                    r = Random.value,
-                    g = Random.value,
-                    b = Random.value
-                };
-                    
+                centroid[i] = new Color(Random.value, Random.value, Random.value, 1.0f);
+                Debug.Log(centroid[i]);
             }
-        }*/
+        }
 
         //重心が停止してるか判断
         private bool ClusterCheck()
@@ -109,9 +108,9 @@ namespace kmeans
         private double ColorDistance(Point a, Color b, Texture2D Image)
         {
             Debug.Log("距離計算開始");
-            double dR = Image.GetPixel(a.X, a.Y).r - (int)b.r;
-            double dG = Image.GetPixel(a.X, a.Y).g - (int)b.g;
-            double dB = Image.GetPixel(a.X, a.Y).b - (int)b.b;
+            double dR = Image.GetPixel(a.X, a.Y).r - b.r;
+            double dG = Image.GetPixel(a.X, a.Y).g - b.g;
+            double dB = Image.GetPixel(a.X, a.Y).b - b.b;
 
             return Math.Sqrt(dR * dR + dG * dG + dB * dB);
         }
@@ -120,8 +119,7 @@ namespace kmeans
         void Needclasster(Texture2D ProgressedImage, int[,] mapp)
         {
             Debug.Log("kmeans突入");
-            //Randinit();
-            while (ClusterCheck() == false && count < 500)
+            while (ClusterCheck() == false)
             {
                 Debug.Log("while");
                 for (int i = 0; i < ProgressedImage.width; i++)
@@ -129,7 +127,7 @@ namespace kmeans
                     for (int j = 0; j < ProgressedImage.height; j++)
                     {
                         Point img = new Point(i, j);//画素を特定
-                        double dist = 0;
+                        double dist = 0.6;
                         int place = 0;
 
                         for (int k = 0; k < cluster_size; k++)
