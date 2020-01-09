@@ -63,65 +63,74 @@ namespace kmeans
             int[,] map = new int[texture.width, texture.height];
             Debug.Log("平滑化終了");
             //テスト
-            Randinit();
-            Point q = new Point(50, 50);
+            //Randinit();
+/*            Point q = new Point(50, 50);
             Color c = new Color(0.2f, 0.2f, 0.5f, 1.0f);
-            Debug.Log(ColorDistance(q, c, texture));
-            //Needclasster(texture, map);
+            Debug.Log(ColorDistance(q, c, texture));*/
+            Needclasster(texture, map);
         }
 
         //以下kmeans法==========================================================================================
         //初期値
-        void Randinit()
+        private void Randinit()
         {
             Random.InitState(Environment.TickCount);
             for (int i = 0; i < cluster_size; i++)
             {
                 centroid[i] = new Color(Random.value, Random.value, Random.value, 1.0f);
-                Debug.Log(centroid[i]);
             }
         }
 
         //重心が停止してるか判断
         private bool ClusterCheck()
         {
+            Debug.Log("ClusterCheck入る");
             int cnt = 0;
             bool ret = false;
 
             for (int i = 0; i < cluster_size; i++)
             {
-                if (centroid[i].r == buffer[i].r && centroid[i].g == buffer[i].g && centroid[i].b == buffer[i].b)//centroid(今の重心)とbuffer(一つ前の重心)のRGB値が同じなら
+                float rab = Math.Abs(centroid[i].r - buffer[i].r);
+                float gab = Math.Abs(centroid[i].g - buffer[i].g);
+                float bab = Math.Abs(centroid[i].b - buffer[i].b);
+
+                if (rab + gab + bab < 2)//centroid(今の重心)とbuffer(一つ前の重心)のRGB値が同じなら
                 {
                     cnt = cnt + 1;
-                    Debug.Log(cnt);
+                    Debug.Log(buffer[i]);
                 }
+                Debug.Log(cnt);
             }
             if (cnt == cluster_size)
             {
                 ret = true;
+                Debug.Log("終わり");
             }
 
             return ret;
         }
 
         //画素（Point）と重心の色の距離を計算
-        private double ColorDistance(Point a, Color b, Texture2D Image)
+        private float ColorDistance(Point a, Color b, Texture2D Image)
         {
             Debug.Log("距離計算開始");
-            double dR = Image.GetPixel(a.X, a.Y).r - b.r;
-            double dG = Image.GetPixel(a.X, a.Y).g - b.g;
-            double dB = Image.GetPixel(a.X, a.Y).b - b.b;
+            float dR = Image.GetPixel(a.X, a.Y).r - b.r;
+            float dG = Image.GetPixel(a.X, a.Y).g - b.g;
+            float dB = Image.GetPixel(a.X, a.Y).b - b.b;
 
-            return Math.Sqrt(dR * dR + dG * dG + dB * dB);
+            return dR * dR + dG * dG + dB * dB;
         }
 
         //kmeans法を行う
         void Needclasster(Texture2D ProgressedImage, int[,] mapp)
         {
+
             Debug.Log("kmeans突入");
+            Randinit();
             while (ClusterCheck() == false)
             {
-                Debug.Log("while");
+                Debug.Log("while中");
+              
                 for (int i = 0; i < ProgressedImage.width; i++)
                 {
                     for (int j = 0; j < ProgressedImage.height; j++)
@@ -146,9 +155,9 @@ namespace kmeans
                 }
 
                 //重心を計算
-                double[] sum_R = new double[cluster_size];
-                double[] sum_G = new double[cluster_size];
-                double[] sum_B = new double[cluster_size];
+                float[] sum_R = new float[cluster_size];
+                float[] sum_G = new float[cluster_size];
+                float[] sum_B = new float[cluster_size];
                 int[] num = new int[cluster_size];
                 int cntdebug = 0;
                 // 重心を計算
@@ -175,11 +184,11 @@ namespace kmeans
                     }
 
                     // 重心位置の更新
-                    centroid[k] = new Color((int)sum_R[k] / num[k], (int)sum_G[k] / num[k], (int)sum_B[k] / num[k]);
+                    centroid[k] = new Color(sum_R[k] / num[k], sum_G[k] / num[k], sum_B[k] / num[k]);
 
                 }
             }
-            Debug.Log("while無視");
+            Debug.Log("while終わり");
             //以下表示用
             Texture2D resltimage = new Texture2D(ProgressedImage.width, ProgressedImage.height);
             for (int i = 0; i < ProgressedImage.width; i++)
