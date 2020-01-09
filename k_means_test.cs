@@ -72,18 +72,6 @@ namespace kmeans
 
         //以下kmeans法==========================================================================================
         //初期値
- /*               void Randinit()
-                {
-                    int seed = Environment.TickCount;//秒数を保持
-                    Random rnd = new Random(seed);
-                    for (int i = 0; i < cluster_size; i++)
-                    {
-                        centroid[i] = Color.FromArgb(255, rnd.Next(255), rnd.Next(255), rnd.Next(255));
-                        Debug.Log(centroid[i].R);
-
-                    }
-                }*/
-
         void Randinit()
         {
             Random.InitState(Environment.TickCount);
