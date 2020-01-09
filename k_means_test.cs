@@ -1,10 +1,10 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using System.Drawing;
 using System;
 using Color = UnityEngine.Color;
-using Random = System.Random;
+using Random = UnityEngine.Random;
 
 namespace kmeans
 {
@@ -17,14 +17,14 @@ namespace kmeans
 
         public static int cluster_size = 7;//クラスター数
         public double neardistribution = 1;//近いと判定する距離
-
+        public static int count = 0;
         Color[] centroid = new Color[cluster_size];//重心用
         Color[] buffer = new Color[cluster_size];//一つ前の重心
         #endregion Definition
 
         // Use this for initialization
         void Start()
-        {
+        {          
             testTex = new RenderTexture(srcTex.width, srcTex.height, 0, RenderTextureFormat.ARGB32);
             testTex.enableRandomWrite = true;
             testTex.Create();
@@ -66,16 +66,32 @@ namespace kmeans
         }
 
         //以下kmeans法==========================================================================================
+        //初期値
+/*        private void Randinit()
+        {
+            //int seed = Environment.TickCount;//秒数を保持
+            for (int i = 0; i < cluster_size; i++)
+            {
+                //Random rnd = new Random(seed++);
+                centroid[i] = new Color()
+                {
+                    r = Random.value,
+                    g = Random.value,
+                    b = Random.value
+                };
+                    
+            }
+        }*/
+
         //重心が停止してるか判断
         private bool ClusterCheck()
         {
-            Debug.Log(cluster_size);
             int cnt = 0;
             bool ret = false;
 
             for (int i = 0; i < cluster_size; i++)
             {
-                if (centroid[i].r == buffer[i].r && centroid[i].g == buffer[i].g && centroid[i].b == buffer[i].b)//centroidとbuffer(一つ前の重心)のRGB値が同じなら
+                if (centroid[i].r == buffer[i].r && centroid[i].g == buffer[i].g && centroid[i].b == buffer[i].b)//centroid(今の重心)とbuffer(一つ前の重心)のRGB値が同じなら
                 {
                     cnt = cnt + 1;
                     Debug.Log(cnt);
@@ -100,22 +116,12 @@ namespace kmeans
             return Math.Sqrt(dR * dR + dG * dG + dB * dB);
         }
 
-        private void Randinit()
-        {
-            int seed = Environment.TickCount;//秒数を保持
-            for (int i = 0; i < cluster_size; i++)
-            {
-                Random rnd = new Random(seed++);
-                centroid[i] = new Color(rnd.Next(255), rnd.Next(255), rnd.Next(255));
-            }
-        }
-
+        //kmeans法を行う
         void Needclasster(Texture2D ProgressedImage, int[,] mapp)
         {
             Debug.Log("kmeans突入");
-            Randinit();
-
-            while (ClusterCheck() == false)
+            //Randinit();
+            while (ClusterCheck() == false && count < 500)
             {
                 Debug.Log("while");
                 for (int i = 0; i < ProgressedImage.width; i++)
@@ -176,6 +182,7 @@ namespace kmeans
                 }
             }
             Debug.Log("while無視");
+            //以下表示用
             Texture2D resltimage = new Texture2D(ProgressedImage.width, ProgressedImage.height);
             for (int i = 0; i < ProgressedImage.width; i++)
             {
