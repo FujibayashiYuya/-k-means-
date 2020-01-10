@@ -16,8 +16,9 @@ namespace kmeans
         private RenderTexture testTex;
 
         public static int cluster_size = 7;//クラスター数
-        public double neardistribution = 1;//近いと判定する距離
+        public double neardistribution = 0.05;//近いと判定する距離
         public static int count = 0;
+        private ComputeBuffer buffermap;
         Color[] centroid = new Color[cluster_size];//重心用
         Color[] buffer = new Color[cluster_size];//一つ前の重心
         #endregion Definition
@@ -62,11 +63,6 @@ namespace kmeans
 
             int[,] map = new int[texture.width, texture.height];
             Debug.Log("平滑化終了");
-            //テスト
-            //Randinit();
-/*            Point q = new Point(50, 50);
-            Color c = new Color(0.2f, 0.2f, 0.5f, 1.0f);
-            Debug.Log(ColorDistance(q, c, texture));*/
             Needclasster(texture, map);
         }
 
@@ -77,7 +73,7 @@ namespace kmeans
             Random.InitState(Environment.TickCount);
             for (int i = 0; i < cluster_size; i++)
             {
-                centroid[i] = new Color(Random.value, Random.value, Random.value, 1.0f);
+                centroid[i] = new Color(Random.value, Random.value, Random.value);
             }
         }
 
@@ -94,7 +90,7 @@ namespace kmeans
                 float gab = Math.Abs(centroid[i].g - buffer[i].g);
                 float bab = Math.Abs(centroid[i].b - buffer[i].b);
 
-                if (rab + gab + bab < 2)//centroid(今の重心)とbuffer(一つ前の重心)のRGB値が同じなら
+                if (rab + gab + bab < 0.05)//centroid(今の重心)とbuffer(一つ前の重心)のRGB値が同じなら
                 {
                     cnt = cnt + 1;
                     Debug.Log(buffer[i]);
@@ -106,6 +102,10 @@ namespace kmeans
                 ret = true;
                 Debug.Log("終わり");
             }
+            else
+            {
+                ret = false;
+            }
 
             return ret;
         }
@@ -113,7 +113,6 @@ namespace kmeans
         //画素（Point）と重心の色の距離を計算
         private float ColorDistance(Point a, Color b, Texture2D Image)
         {
-            Debug.Log("距離計算開始");
             float dR = Image.GetPixel(a.X, a.Y).r - b.r;
             float dG = Image.GetPixel(a.X, a.Y).g - b.g;
             float dB = Image.GetPixel(a.X, a.Y).b - b.b;
@@ -124,12 +123,24 @@ namespace kmeans
         //kmeans法を行う
         void Needclasster(Texture2D ProgressedImage, int[,] mapp)
         {
-
+            //ComputeShaderに渡すもの
+            //(Texture2D)ProgressedImage,mapp(Buffer int), neardistribution(double),centroid[](floatの配列数７)
             Debug.Log("kmeans突入");
             Randinit();
+            
+
             while (ClusterCheck() == false)
             {
                 Debug.Log("while中");
+
+/*              コンピュートシェーダに入れたい
+ *              var step2 = test_k.FindKernel("kmeans");
+                buffermap = new ComputeBuffer(mapp.Length, sizeof(int));
+                test_k.SetTexture(step2, "srcTexture2", ProgressedImage);
+                test_k.SetInts("commap", mapp[,]);
+                test_k.SetFloat("near", neardistribution);
+                test_k.SetInt("clussize", cluster_size);
+                test_k.Dispatch(step2, srcTex.width / 8, srcTex.height / 8, 1);*/
               
                 for (int i = 0; i < ProgressedImage.width; i++)
                 {
@@ -141,7 +152,7 @@ namespace kmeans
 
                         for (int k = 0; k < cluster_size; k++)
                         {
-                            dist = ColorDistance(img, centroid[k], ProgressedImage);//距離計算
+                            dist = ColorDistance(img, centroid[k], ProgressedImage);//距離計算ColorDistanceはShaderごり押し
                             Debug.Log(dist);
                             if (dist < neardistribution)
                             {
@@ -159,7 +170,6 @@ namespace kmeans
                 float[] sum_G = new float[cluster_size];
                 float[] sum_B = new float[cluster_size];
                 int[] num = new int[cluster_size];
-                int cntdebug = 0;
                 // 重心を計算
                 for (int i = 0; i < ProgressedImage.width; i++)
                 {
@@ -169,7 +179,6 @@ namespace kmeans
                         sum_G[mapp[i, j]] += ProgressedImage.GetPixel(i, j).g;
                         sum_B[mapp[i, j]] += ProgressedImage.GetPixel(i, j).b;
                         num[mapp[i, j]] = num[mapp[i, j]] + 1;
-                        cntdebug = cntdebug + 1;
                     }
                 }
 
@@ -185,10 +194,8 @@ namespace kmeans
 
                     // 重心位置の更新
                     centroid[k] = new Color(sum_R[k] / num[k], sum_G[k] / num[k], sum_B[k] / num[k]);
-
                 }
             }
-            Debug.Log("while終わり");
             //以下表示用
             Texture2D resltimage = new Texture2D(ProgressedImage.width, ProgressedImage.height);
             for (int i = 0; i < ProgressedImage.width; i++)
@@ -198,7 +205,7 @@ namespace kmeans
                     resltimage.SetPixel(i, j, centroid[mapp[i, j]]);
                 }
             }
-
+            resltimage.Apply();
             GetComponent<Renderer>().material.mainTexture = resltimage;
         }
     }
